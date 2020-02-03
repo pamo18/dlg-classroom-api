@@ -5,7 +5,7 @@ const db = require("../../src/database.js");
 router.get("/", async (req, res) => {
     res.json({
         data: {
-            device: await db.fetchAll("category")
+            device: await db.fetchAll("classroom")
         }
     });
 });

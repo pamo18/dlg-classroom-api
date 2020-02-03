@@ -1,14 +1,12 @@
 var express = require('express');
 var router = express.Router();
-const classroom = require("../../src/classroom.js");
+const db = require("../../src/database.js");
 
 router.get("/", async (req, res) => {
-    let data = {
-        brands: await classroom.getBrands()
-    };
-
     res.json({
-        data: data
+        data: {
+            device: await db.fetchAll("brand")
+        }
     });
 });
 
