@@ -24,21 +24,56 @@ async function connect() {
 };
 
 
+
 /**
  * Get all items from the db table.
  * @async
  * @returns object
  */
 async function fetchAll(table) {
-    let sql = `SELECT * FROM ${table}`;
-    let res;
+    let sql = `SELECT * FROM ${table};`;
+    let res = await db.query(sql);
 
-    res = await db.query(sql);
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table with condition.
+ * @async
+ * @returns object
+ */
+async function fetchAllWhere(table, where) {
+    let sql = `SELECT * FROM ${table} WHERE ${where};`;
+    let res = await db.query(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table with condition and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllJoinWhere(table1, table2, on, where) {
+    let sql = `
+        SELECT * FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on}
+        WHERE ${where};
+        `;
+
+    let res = await db.query(sql);
 
     return res;
 }
 
 
 module.exports = {
-    fetchAll: fetchAll
+    fetchAll: fetchAll,
+    fetchAllWhere: fetchAllWhere,
+    fetchAllJoinWhere: fetchAllJoinWhere
 }

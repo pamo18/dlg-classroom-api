@@ -9,12 +9,19 @@ const express = require("express");
 const app = express();
 const cors = require('cors');
 const bodyParser = require("body-parser");
-
+ // Home route
 const index = require('./routes/index.js');
+// Device routes
 const device = require('./routes/device/device.js');
 const category = require('./routes/device/category.js');
 const brand = require('./routes/device/brand.js');
+// Classroom routes
 const classroom = require('./routes/classroom/classroom.js');
+const building = require('./routes/classroom/building.js');
+const classroomType = require('./routes/classroom/type.js');
+const classroomDevice = require('./routes/classroom/device.js');
+// Person route
+const person = require('./routes/person/person.js');
 
 // This is middleware called for all routes.
 // Middleware takes three parameters.
@@ -34,6 +41,10 @@ app.use("/device", device);
 app.use("/device/category", category);
 app.use("/device/brand", brand);
 app.use("/classroom", classroom);
+app.use("/classroom/building", building);
+app.use("/classroom/type", classroomType);
+app.use("/classroom/device", classroomDevice);
+app.use("/person", person);
 
 // Add routes for 404 and error handling
 // Catch 404 and forward to error handler
