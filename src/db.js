@@ -72,8 +72,68 @@ async function fetchAllJoinWhere(table1, table2, on, where) {
 }
 
 
+
+/**
+ * Insert items to the db table.
+ * @async
+ * @returns object
+ */
+async function insert(table, data) {
+    let columns = Object.keys(data).toString();
+    let values = Object.values(data);
+    let params = values.map(val => `'${val}'`).join(", ");
+
+    let sql = `INSERT INTO ${table}(${columns}) VALUES (${params});`;
+    let res = await db.query(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Update items.
+ * @async
+ * @returns object
+ */
+async function update(table, data, where) {
+    let columns = Object.keys(data);
+    let values = Object.values(data);
+    let params = columns.map(key => `${key} = '${data[key]}'`).join(", ");
+
+    let sql = `
+        UPDATE ${table}
+        SET ${params}
+        WHERE ${where};
+        `;
+    let res = await db.query(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Delete items.
+ * @async
+ * @returns object
+ */
+async function deleteFrom(table, where) {
+    let sql = `
+        DELETE FROM ${table}
+        WHERE ${where};
+        `;
+    let res = await db.query(sql);
+
+    return res;
+}
+
+
 module.exports = {
     fetchAll: fetchAll,
     fetchAllWhere: fetchAllWhere,
-    fetchAllJoinWhere: fetchAllJoinWhere
+    fetchAllJoinWhere: fetchAllJoinWhere,
+    insert: insert,
+    update: update,
+    deleteFrom: deleteFrom
 }
