@@ -27,4 +27,28 @@ async function createDevice(req, res) {
     );
 }
 
+// View route
+router.get("/view/:id", async (req, res) => {
+    let where = `id = "${req.params.id}"`;
+    res.json(await db.fetchAllWhere("device", where));
+});
+
+// Update route
+router.post("/update/:id",
+    (req, res) => updateClassroom(req, res));
+
+async function updateClassroom(req, res) {
+    let where = `id = "${req.params.id}"`;
+    await db.update("device", req.body, where);
+}
+
+// Delete route
+router.post("/delete/:id",
+    (req, res) => deleteClassroom(req, res));
+
+async function deleteClassroom(req, res) {
+    let where = `id = "${req.params.id}"`;
+    await db.deleteFrom("device", where);
+}
+
 module.exports = router;

@@ -25,39 +25,39 @@ async function createClassroom(req, res) {
 }
 
 // View route
-router.get("/view/:name", async (req, res) => {
-    let where = `name = "${req.params.name}"`;
+router.get("/view/:id", async (req, res) => {
+    let where = `id = "${req.params.id}"`;
     res.json(await db.fetchAllWhere("classroom", where));
 });
 
 // Device View route
-router.get("/device/view/:name", async (req, res) => {
-    let name = req.params.name;
+router.get("/device/view/:id", async (req, res) => {
+    let id = req.params.id;
 
     res.json(
         await db.fetchAllJoinWhere(
             "device2classroom",
             "device",
             "device2classroom.device_id = device.id",
-            `device2classroom.classroom_name = "${name}"`)
+            `device2classroom.classroom_id = "${id}"`)
     );
 });
 
 // Update route
-router.post("/update/:name",
+router.post("/update/:id",
     (req, res) => updateClassroom(req, res));
 
 async function updateClassroom(req, res) {
-    let where = `name = "${req.params.name}"`;
+    let where = `id = "${req.params.id}"`;
     await db.update("classroom", req.body, where);
 }
 
 // Delete route
-router.post("/delete/:name",
+router.post("/delete/:id",
     (req, res) => deleteClassroom(req, res));
 
 async function deleteClassroom(req, res) {
-    let where = `name = "${req.params.name}"`;
+    let where = `id = "${req.params.id}"`;
     await db.deleteFrom("classroom", where);
 }
 

@@ -6,21 +6,25 @@
 const error = require("./error.js");
 const mysql  = require("promise-mysql");
 const config = require("../config/db/config.json");
-let db;
-connect();
-
 
 /**
- * Create a connection.
+ * Create a connection, make a query and close the connection.
  * @async
- * @returns void
+ * @returns object
  */
-async function connect() {
-    db = await mysql.createConnection(config);
+async function dbQuery(sql) {
+    const db = await mysql.createConnection(config);
+    let res;
 
-    process.on("exit", () => {
-        db.end();
-    });
+    try {
+        res = await db.query(sql);
+    } catch (err) {
+        console.log(err);
+    } finally {
+        await db.end();
+    }
+
+    return res;
 };
 
 
@@ -32,7 +36,7 @@ async function connect() {
  */
 async function fetchAll(table) {
     let sql = `SELECT * FROM ${table};`;
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
@@ -46,7 +50,7 @@ async function fetchAll(table) {
  */
 async function fetchAllWhere(table, where) {
     let sql = `SELECT * FROM ${table} WHERE ${where};`;
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
@@ -66,7 +70,7 @@ async function fetchAllJoinWhere(table1, table2, on, where) {
         WHERE ${where};
         `;
 
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
@@ -84,7 +88,7 @@ async function insert(table, data) {
     let params = values.map(val => `'${val}'`).join(", ");
 
     let sql = `INSERT INTO ${table}(${columns}) VALUES (${params});`;
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
@@ -106,7 +110,7 @@ async function update(table, data, where) {
         SET ${params}
         WHERE ${where};
         `;
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
@@ -123,7 +127,7 @@ async function deleteFrom(table, where) {
         DELETE FROM ${table}
         WHERE ${where};
         `;
-    let res = await db.query(sql);
+    let res = await dbQuery(sql);
 
     return res;
 }
