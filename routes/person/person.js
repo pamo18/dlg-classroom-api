@@ -4,7 +4,9 @@ const db = require("../../src/db.js");
 
 // Index route
 router.get("/", async (req, res) => {
-    res.json(await db.fetchAll("person"));
+    res.json(
+        await db.fetchAll("person")
+    );
 });
 
 module.exports = router;
