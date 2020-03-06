@@ -11,21 +11,21 @@ router.get("/", async (req, res) => {
     );
 });
 
-// Index Category route
+// Category Index route
 router.get("/category", async (req, res) => {
     res.json(
         await db.fetchAll("category")
     );
 });
 
-// Index Brand route
+// Brand Index route
 router.get("/brand", async (req, res) => {
     res.json(
         await db.fetchAll("brand")
     );
 });
 
-// Create route
+// Device Create route
 router.post("/create",
     (req, res) => createDevice(req.body, res));
 
@@ -35,7 +35,7 @@ async function createDevice(req, res) {
     );
 }
 
-// View route
+// Device View route
 router.get("/view/:id", async (req, res) => {
     let where = `id = "${req.params.id}"`;
 
@@ -44,7 +44,7 @@ router.get("/view/:id", async (req, res) => {
     );
 });
 
-// Update route
+// Device Update route
 router.post("/update/:id",
     (req, res) => updateClassroom(req, res));
 
@@ -56,15 +56,19 @@ async function updateClassroom(req, res) {
     );
 }
 
-// Delete route
+// Device Delete route
 router.post("/delete/:id",
     (req, res) => deleteClassroom(req, res));
 
 async function deleteClassroom(req, res) {
-    let where = `id = "${req.params.id}"`;
+    let id = req.params.id;
+    let where1 = `device_id = "${id}"`;
+    let where2 = `id = "${id}"`;
+
+    await db.deleteFrom("device2classroom", where1);
 
     res.json(
-        await db.deleteFrom("device", where)
+        await db.deleteFrom("device", where2)
     );
 }
 
