@@ -91,7 +91,7 @@ async function addClassroomDevice(req, res) {
 }
 
 // Update Device from Classroom
-router.post("/device/update/:classroomFrom&:classroomTo&:deviceid",
+router.post("/device/update/:classroomFrom&:deviceid",
     (req, res) => updateClassroomDevice(req, res));
 
 async function updateClassroomDevice(req, res) {
