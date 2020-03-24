@@ -29,8 +29,10 @@ async function createClassroom(req, res) {
 }
 
 // Classroom View route
-router.get("/view/:id", async (req, res) => {
-    let where = `id = "${req.params.id}"`;
+router.get("/view/:name&:value", async (req, res) => {
+    let name = req.params.name;
+    let value = req.params.value;
+    let where = `${name} = "${value}"`;
 
     res.json(
         await db.fetchAllWhere("classroom", where)
@@ -68,15 +70,16 @@ async function deleteClassroom(req, res) {
 // Classroom Device Routes----------------------------------------------------//
 
 // Classroom Device View route
-router.get("/device/view/:id", async (req, res) => {
-    let id = req.params.id;
+router.get("/device/view/:name&:value", async (req, res) => {
+    let name = req.params.name;
+    let value = req.params.value;
 
     res.json(
         await db.fetchAllJoinWhere(
             "device2classroom",
             "device",
             "device2classroom.device_id = device.id",
-            `device2classroom.classroom_id = "${id}"`)
+            `device2classroom.${name} = "${value}"`)
     );
 });
 

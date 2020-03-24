@@ -58,7 +58,7 @@ async function fetchAllWhere(table, where) {
 
 
 /**
- * Get all items from the db table with condition and join.
+ * Get all items from the db tables with condition and join.
  * @async
  * @returns object
  */
@@ -70,6 +70,47 @@ async function fetchAllJoinWhere(table1, table2, on, where) {
         WHERE ${where};
         `;
 
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllDoubleJoin(table1, table2, table3, on1, on2) {
+    let sql = `
+        SELECT * FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where) {
+    let sql = `
+        SELECT * FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2}
+        WHERE ${where};
+        `;
     let res = await dbQuery(sql);
 
     return res;
@@ -137,6 +178,8 @@ module.exports = {
     fetchAll: fetchAll,
     fetchAllWhere: fetchAllWhere,
     fetchAllJoinWhere: fetchAllJoinWhere,
+    fetchAllDoubleJoin: fetchAllDoubleJoin,
+    fetchAllDoubleJoinWhere: fetchAllDoubleJoinWhere,
     insert: insert,
     update: update,
     deleteFrom: deleteFrom

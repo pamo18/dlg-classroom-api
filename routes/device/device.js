@@ -36,12 +36,33 @@ async function createDevice(req, res) {
 }
 
 // Device View route
-router.get("/view/:id", async (req, res) => {
-    let where = `id = "${req.params.id}"`;
+router.get("/view/:name&:value", async (req, res) => {
+    let name = req.params.name;
+    let value = req.params.value;
 
-    res.json(
-        await db.fetchAllWhere("device", where)
-    );
+    if (value === "all") {
+        res.json(
+            await db.fetchAllDoubleJoin(
+                "device",
+                "device2classroom",
+                "classroom",
+                "device.id = device2classroom.device_id",
+                "classroom.id = device2classroom.classroom_id"
+            )
+        );
+    } else {
+        res.json(
+            await db.fetchAllDoubleJoinWhere(
+                "device",
+                "device2classroom",
+                "classroom",
+                "device.id = device2classroom.device_id",
+                "classroom.id = device2classroom.classroom_id",
+                `device.${name} = "${value}"`
+            )
+        );
+    }
+
 });
 
 // Device Update route
