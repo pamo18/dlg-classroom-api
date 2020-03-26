@@ -82,11 +82,9 @@ async function fetchAllJoinWhere(table1, table2, on, where) {
  * @async
  * @returns object
  */
-async function fetchAllDoubleJoin(table1, table2, table3, on1, on2) {
+async function fetchAllDoubleJoin(table1, table2, table3, on1, on2, select = "SELECT *") {
     let sql = `
-        SELECT *,
-        ${table1}.id AS ${table1}ID,
-        ${table3}.id AS ${table3}ID
+        ${select}
         FROM ${table1}
         LEFT JOIN ${table2}
     	ON ${on1}
@@ -105,11 +103,9 @@ async function fetchAllDoubleJoin(table1, table2, table3, on1, on2) {
  * @async
  * @returns object
  */
-async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where) {
+async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, select = "SELECT *") {
     let sql = `
-        SELECT *,
-        ${table1}.id AS ${table1}ID,
-        ${table3}.id AS ${table3}ID
+        ${select}
         FROM ${table1}
         LEFT JOIN ${table2}
     	ON ${on1}

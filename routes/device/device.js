@@ -39,15 +39,22 @@ async function createDevice(req, res) {
 router.get("/view/:name&:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
+    let select = `
+        SELECT *,
+        device.id AS deviceID,
+        classroom.id AS classroomID,
+        classroom.name AS classroomName
+    `;
 
-    if (value === "all") {
+    if (value === "Alla") {
         res.json(
             await db.fetchAllDoubleJoin(
                 "device",
                 "device2classroom",
                 "classroom",
                 "device.id = device2classroom.device_id",
-                "classroom.id = device2classroom.classroom_id"
+                "classroom.id = device2classroom.classroom_id",
+                select
             )
         );
     } else {
@@ -58,7 +65,8 @@ router.get("/view/:name&:value", async (req, res) => {
                 "classroom",
                 "device.id = device2classroom.device_id",
                 "classroom.id = device2classroom.classroom_id",
-                `device.${name} = "${value}"`
+                `device.${name} = "${value}"`,
+                select
             )
         );
     }
