@@ -18,6 +18,8 @@ const classroom = require('./routes/classroom/classroom.js');
 const building = require('./routes/building/building.js');
 // Person route
 const person = require('./routes/person/person.js');
+// Report routes
+const report = require('./routes/report/report.js');
 
 // This is middleware called for all routes.
 // Middleware takes three parameters.
@@ -37,6 +39,7 @@ app.use("/device", device);
 app.use("/classroom", classroom);
 app.use("/building", building);
 app.use("/person", person);
+app.use("/report", report);
 
 // Add routes for 404 and error handling
 // Catch 404 and forward to error handler

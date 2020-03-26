@@ -105,8 +105,6 @@ async function deleteClassroom(req, res) {
 
 // Available Devices route
 router.get("/available", async (req, res) => {
-    let id = req.params.id;
-
     res.json(
         await db.fetchAllJoinWhere(
             "device",
