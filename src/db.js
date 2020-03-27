@@ -121,6 +121,53 @@ async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, 
 
 
 /**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllTrippleJoin(table1, table2, table3, table4, on1, on2, on3, select = "SELECT *") {
+    let sql = `
+        ${select}
+        FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2}
+        LEFT JOIN ${table4}
+    	ON ${on3};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllTrippleJoinWhere(table1, table2, table3, table4, on1, on2, on3, where, select = "SELECT *") {
+    let sql = `
+        ${select}
+        FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2}
+        LEFT JOIN ${table4}
+    	ON ${on3}
+        WHERE ${where};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
  * Insert items to the db table.
  * @async
  * @returns object
@@ -146,7 +193,7 @@ async function insert(table, data) {
 async function update(table, data, where) {
     let columns = Object.keys(data);
     let values = Object.values(data);
-    let params = columns.map(key => `${key} = '${data[key]}'`).join(", ");
+    let params = columns.map(key => !data[key] ? `${key} = null` : `${key} = '${data[key]}'`).join(", ");
 
     let sql = `
         UPDATE ${table}
@@ -182,6 +229,8 @@ module.exports = {
     fetchAllJoinWhere: fetchAllJoinWhere,
     fetchAllDoubleJoin: fetchAllDoubleJoin,
     fetchAllDoubleJoinWhere: fetchAllDoubleJoinWhere,
+    fetchAllTrippleJoin: fetchAllTrippleJoin,
+    fetchAllTrippleJoinWhere: fetchAllTrippleJoinWhere,
     insert: insert,
     update: update,
     deleteFrom: deleteFrom
