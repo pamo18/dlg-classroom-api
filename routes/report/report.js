@@ -1,55 +1,110 @@
 var express = require('express');
 var router = express.Router();
 const db = require("../../src/db.js");
+let select = `
+    SELECT
+    report.*,
+    classroom.id AS classroom_id,
+    classroom.name AS classroom_name,
+    classroom.type AS classroom_type,
+    classroom.location AS classroom_location,
+    classroom.level AS classroom_level,
+    classroom.image AS classroom_image,
+    device.id AS device_id,
+    device.brand AS device_brand,
+    device.model AS device_model,
+    device.category AS device_category,
+    device.url AS device_url
+`;
 
 // Index route
 router.get("/", async (req, res) => {
-    let select = `
-        SELECT
-        report.id,
-        report.name,
-        report.item,
-        report.message,
-        report.action,
-        report.solved,
-        COALESCE (classroom.id, device2classroom.classroom_id) AS classroom_id,
-        COALESCE (classroom.name, (SELECT name FROM classroom WHERE id = device2classroom.classroom_id)) AS classroom_name,
-        device.id AS device_id,
-        device.brand AS device_brand,
-        device.model AS device_model,
-        device.category AS device_category
-    `;
-
     res.json(
-        await db.fetchAllTrippleJoin(
-            "report",
-            "classroom",
-            "device",
-            "device2classroom",
-            "report.item = 'classroom' AND report.item_id = classroom.id",
-            "report.item = 'device' AND report.item_id = device.id",
-            "device2classroom.device_id = device.id",
+        await db.fetchAllDoubleJoin(
+            `report`,
+            `classroom`,
+            `device`,
+            `COALESCE(
+            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+            report.item_group = "classroom" AND report.item_id = classroom.id
+            )`,
+            `report.item_group = "device" AND report.item_id = device.id`,
             select
         )
     );
 });
 
-// Report View route
-router.get("/check/:item&:itemid", async (req, res) => {
-    let item = req.params.item;
+// Report classroom View route
+router.get("/view/:name&:itemid", async (req, res) => {
+    let name = req.params.name;
     let itemid = req.params.itemid;
-    let where = `item = "${item}" AND item_id = "${itemid}"`;
+    let where = `${name} = "${itemid}"`;
 
     res.json(
-        await db.fetchAllWhere("report", where)
+        await db.fetchAllDoubleJoinWhere(
+            `report`,
+            `classroom`,
+            `device`,
+            `COALESCE(
+            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+            report.item_group = "classroom" AND report.item_id = classroom.id
+            )`,
+            `report.item_group = "device" AND report.item_id = device.id`,
+            where,
+            select
+        )
     );
 });
 
-// Report View route
-router.get("/view/:item&:itemid", async (req, res) => {
-    let item = req.params.item;
+// Report classroom View route
+router.get("/classroom/view/:name&:itemid", async (req, res) => {
+    let name = req.params.name;
     let itemid = req.params.itemid;
-    let where = `item = "${item}" AND item_id = "${itemid}"`;
+    let where = `item_group = "classroom" AND ${name} = "${itemid}"`;
+
+    res.json(
+        await db.fetchAllDoubleJoinWhere(
+            `report`,
+            `classroom`,
+            `device`,
+            `COALESCE(
+            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+            report.item_group = "classroom" AND report.item_id = classroom.id
+            )`,
+            `report.item_group = "device" AND report.item_id = device.id`,
+            where,
+            select
+        )
+    );
+});
+
+// Report device View route
+router.get("/device/view/:name&:itemid", async (req, res) => {
+    let name = req.params.name;
+    let itemid = req.params.itemid;
+    let where = `item_group = "device" AND ${name} = "${itemid}"`;
+
+    res.json(
+        await db.fetchAllDoubleJoinWhere(
+            `report`,
+            `classroom`,
+            `device`,
+            `COALESCE(
+            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+            report.item_group = "classroom" AND report.item_id = classroom.id
+            )`,
+            `report.item_group = "device" AND report.item_id = device.id`,
+            where,
+            select
+        )
+    );
+});
+
+// Report Check route
+router.get("/check/:itemGroup&:itemid", async (req, res) => {
+    let itemGroup = req.params.itemGroup;
+    let itemid = req.params.itemid;
+    let where = `item_group = "${itemGroup}" AND item_id = "${itemid}"`;
 
     res.json(
         await db.fetchAllWhere("report", where)
