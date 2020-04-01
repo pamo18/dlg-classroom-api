@@ -40,10 +40,10 @@ router.get("/view/:name&:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
     let select = `
-        SELECT *,
-        device.id AS deviceID,
-        classroom.id AS classroomID,
-        classroom.name AS classroomName
+        SELECT
+        device.*,
+        classroom.id AS classroom_id,
+        classroom.name AS classroom_name
     `;
 
     if (value === "Alla") {
