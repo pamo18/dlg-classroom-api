@@ -51,7 +51,6 @@ async function fetchAll(table) {
 async function fetchAllWhere(table, where) {
     let sql = `SELECT * FROM ${table} WHERE ${where};`;
     let res = await dbQuery(sql);
-
     return res;
 }
 
@@ -62,12 +61,13 @@ async function fetchAllWhere(table, where) {
  * @async
  * @returns object
  */
-async function fetchAllJoinWhere(table1, table2, on, where) {
+async function fetchAllJoinWhere(table1, table2, on, where, orderBy = null) {
     let sql = `
         SELECT * FROM ${table1}
         LEFT JOIN ${table2}
     	ON ${on}
-        WHERE ${where};
+        WHERE ${where}
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
         `;
 
     let res = await dbQuery(sql);
@@ -82,28 +82,7 @@ async function fetchAllJoinWhere(table1, table2, on, where) {
  * @async
  * @returns object
  */
-async function fetchAllDoubleJoin(table1, table2, table3, on1, on2, select = "SELECT *") {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, select = "SELECT *") {
+async function fetchAllDoubleJoin(table1, table2, table3, on1, on2, select, orderBy = null) {
     let sql = `
         ${select}
         FROM ${table1}
@@ -111,7 +90,7 @@ async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, 
     	ON ${on1}
         LEFT JOIN ${table3}
     	ON ${on2}
-        WHERE ${where};
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
         `;
     let res = await dbQuery(sql);
 
@@ -125,7 +104,7 @@ async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, 
  * @async
  * @returns object
  */
-async function fetchAllTrippleJoin(table1, table2, table3, table4, on1, on2, on3, select = "SELECT *") {
+async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, select, orderBy = null) {
     let sql = `
         ${select}
         FROM ${table1}
@@ -133,8 +112,8 @@ async function fetchAllTrippleJoin(table1, table2, table3, table4, on1, on2, on3
     	ON ${on1}
         LEFT JOIN ${table3}
     	ON ${on2}
-        LEFT JOIN ${table4}
-    	ON ${on3};
+        WHERE ${where}
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
         `;
     let res = await dbQuery(sql);
 
@@ -148,7 +127,7 @@ async function fetchAllTrippleJoin(table1, table2, table3, table4, on1, on2, on3
  * @async
  * @returns object
  */
-async function fetchAllTrippleJoinWhere(table1, table2, table3, table4, on1, on2, on3, where, select = "SELECT *") {
+async function fetchAllTrippleJoin(select, table1, table2, table3, table4, on1, on2, on3, where = null, groupBy = null, orderBy = null) {
     let sql = `
         ${select}
         FROM ${table1}
@@ -158,7 +137,34 @@ async function fetchAllTrippleJoinWhere(table1, table2, table3, table4, on1, on2
     	ON ${on2}
         LEFT JOIN ${table4}
     	ON ${on3}
-        WHERE ${where};
+        ${where ? 'WHERE ' + where : ""}
+        ${groupBy ? 'GROUP BY ' + groupBy : ""}
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllTrippleJoinWhere(table1, table2, table3, table4, on1, on2, on3, where, select, orderBy = null) {
+    let sql = `
+        ${select}
+        FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2}
+        LEFT JOIN ${table4}
+    	ON ${on3}
+        WHERE ${where}
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
         `;
     let res = await dbQuery(sql);
 

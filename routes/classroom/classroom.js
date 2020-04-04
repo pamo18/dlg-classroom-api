@@ -28,8 +28,69 @@ async function createClassroom(req, res) {
     );
 }
 
+// Classroom view where route
+router.post("/view/where",
+    (req, res) => filterClassroom(req, res));
+
+async function filterClassroom(req, res) {
+    let data = req.body;
+    let columns = Object.keys(data);
+    let filteredColumns = columns.filter((key) => data[key] != "Alla");
+
+    let params = filteredColumns.map(key => {
+        let filter;
+
+        if (key === "solved") {
+            if (data[key] === "Alla") {
+                filter = null;
+            } else if (data[key] === "Åtgärdat") {
+                filter = `(
+                    (r1.id IS NOT NULL AND r1.solved IS NOT NULL)
+                    OR
+                    (r2.id IS NOT NULL AND r2.solved IS NOT NULL)
+                )`;
+            } else {
+                filter = `(
+                    (r1.id IS NOT NULL AND r1.solved IS NULL)
+                    OR
+                    (r2.id IS NOT NULL AND r2.solved IS NULL)
+                )`;
+            }
+        } else {
+            filter = `${key} = "${data[key]}"`
+        }
+        return filter;
+    });
+
+    let where = params.join(" AND ");
+    let select = `
+        SELECT classroom.*
+    `;
+
+    if (!where) {
+        res.json(
+            await db.fetchAll("classroom")
+        );
+    } else {
+        res.json(
+            await db.fetchAllTrippleJoin(
+                select,
+                `classroom`,
+                `report r1`,
+                `device2classroom`,
+                `report r2`,
+                `r1.item_group = "classroom"  AND r1.item_id = classroom.id`,
+                `device2classroom.classroom_id = classroom.id`,
+                `r2.item_group = "device" AND r2.item_id = device2classroom.device_id`,
+                where,
+                `classroom.id`
+            )
+        );
+    }
+}
+
 // Classroom View route
-router.get("/view/:name&:value", async (req, res) => {
+router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
     let where = `${name} = "${value}"`;
@@ -70,7 +131,7 @@ async function deleteClassroom(req, res) {
 // Classroom Device Routes----------------------------------------------------//
 
 // Classroom Device View route
-router.get("/device/view/:name&:value", async (req, res) => {
+router.get("/device/view/:name/:value/:name2?/:value2?", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
 
@@ -94,7 +155,7 @@ async function addClassroomDevice(req, res) {
 }
 
 // Update Device from Classroom
-router.post("/device/update/:classroomFrom&:deviceid",
+router.post("/device/update/:classroomFrom/:deviceid",
     (req, res) => updateClassroomDevice(req, res));
 
 async function updateClassroomDevice(req, res) {
@@ -106,7 +167,7 @@ async function updateClassroomDevice(req, res) {
 }
 
 // Remove Device from Classroom
-router.post("/device/delete/:classroomid&:deviceid",
+router.post("/device/delete/:classroomid/:deviceid",
     (req, res) => deleteClassroomDevice(req, res));
 
 async function deleteClassroomDevice(req, res) {
