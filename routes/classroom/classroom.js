@@ -36,25 +36,19 @@ async function filterClassroom(req, res) {
     let data = req.body;
     let columns = Object.keys(data);
     let filteredColumns = columns.filter((key) => data[key] != "Alla");
+    let filter;
+    let having;
 
     let params = filteredColumns.map(key => {
-        let filter;
-
         if (key === "solved") {
             if (data[key] === "Alla") {
                 filter = null;
             } else if (data[key] === "Åtgärdat") {
-                filter = `(
-                    (r1.id IS NOT NULL AND r1.solved IS NOT NULL)
-                    OR
-                    (r2.id IS NOT NULL AND r2.solved IS NOT NULL)
-                )`;
+                filter = `r.id IS NOT NULL`;
+                having = "= 0";
             } else {
-                filter = `(
-                    (r1.id IS NOT NULL AND r1.solved IS NULL)
-                    OR
-                    (r2.id IS NOT NULL AND r2.solved IS NULL)
-                )`;
+                filter = `r.id IS NOT NULL`;
+                having = "> 0";
             }
         } else {
             filter = `${key} = "${data[key]}"`
@@ -71,20 +65,26 @@ async function filterClassroom(req, res) {
         res.json(
             await db.fetchAll("classroom")
         );
-    } else {
+    } else if (having) {
         res.json(
-            await db.fetchAllTrippleJoin(
+            await db.fetchAllDoubleJoinHaving(
                 select,
                 `classroom`,
-                `report r1`,
-                `device2classroom`,
-                `report r2`,
-                `r1.item_group = "classroom"  AND r1.item_id = classroom.id`,
-                `device2classroom.classroom_id = classroom.id`,
-                `r2.item_group = "device" AND r2.item_id = device2classroom.device_id`,
+                `device2classroom dc`,
+                `report r`,
+                `dc.classroom_id = classroom.id`,
+                `COALESCE(
+                (r.item_group = "classroom" AND r.item_id = classroom.id),
+                (r.item_group = "device" AND r.item_id = dc.device_id))`,
+                `SUM((SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
+                (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = dc.device_id AND solved IS NULL)) ${having}`,
                 where,
                 `classroom.id`
             )
+        );
+    } else {
+        res.json(
+            await db.fetchAllWhere("classroom", where)
         );
     }
 }

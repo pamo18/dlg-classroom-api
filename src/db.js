@@ -127,6 +127,31 @@ async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, 
  * @async
  * @returns object
  */
+async function fetchAllDoubleJoinHaving(select, table1, table2, table3, on1, on2, having, where = null, groupBy = null, orderBy = null) {
+    let sql = `
+        ${select}
+        FROM ${table1}
+        LEFT JOIN ${table2}
+    	ON ${on1}
+        LEFT JOIN ${table3}
+    	ON ${on2}
+        ${where ? 'WHERE ' + where : ""}
+        ${groupBy ? 'GROUP BY ' + groupBy : ""}
+        HAVING ${having}
+        ${orderBy ? 'ORDER BY ' + orderBy : ""};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
 async function fetchAllTrippleJoin(select, table1, table2, table3, table4, on1, on2, on3, where = null, groupBy = null, orderBy = null) {
     let sql = `
         ${select}
@@ -235,6 +260,7 @@ module.exports = {
     fetchAllJoinWhere: fetchAllJoinWhere,
     fetchAllDoubleJoin: fetchAllDoubleJoin,
     fetchAllDoubleJoinWhere: fetchAllDoubleJoinWhere,
+    fetchAllDoubleJoinHaving: fetchAllDoubleJoinHaving,
     fetchAllTrippleJoin: fetchAllTrippleJoin,
     fetchAllTrippleJoinWhere: fetchAllTrippleJoinWhere,
     insert: insert,

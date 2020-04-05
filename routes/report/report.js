@@ -142,13 +142,13 @@ router.get("/device/view/:name/:itemid", async (req, res) => {
 router.get("/check/:itemGroup/:itemid", async (req, res) => {
     let itemGroup = req.params.itemGroup;
     let itemid = req.params.itemid;
-    let where = `item_group = "${itemGroup}" AND item_id = "${itemid}"`;
+    let where = `item_group = "${itemGroup}" AND item_id = "${itemid}" AND solved IS NULL`;
 
     if (itemGroup === "classroom") {
         let res1 = await db.fetchAllJoinWhere(
             `device2classroom`,
             `report`,
-            `report.item_group = "device" AND report.item_id = device2classroom.device_id`,
+            `report.item_group = "device" AND report.item_id = device2classroom.device_id AND report.solved IS NULL`,
             `classroom_id = ${itemid} AND report.id IS NOT NULL`
         );
 
