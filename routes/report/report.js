@@ -36,44 +36,10 @@ router.get("/", async (req, res) => {
 });
 
 // Report classroom View route
-router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
+router.get("/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
-    let name2 = req.params.name2 || null;
-    let value2 = req.params.value2 || null;
-    let where;
-    let where1;
-    let where2;
-
-    if (value === "Alla") {
-        where1 = null;
-    } else {
-        where1 = `${name} = "${value}"`;
-    }
-
-    if (name2 && value2) {
-        if (name2 === "solved") {
-            if (value2 === "Alla") {
-                where2 = null;
-            } else if (value2 === "Åtgärdat") {
-                where2 = `solved IS NOT NULL`;
-            } else {
-                where2 = `solved IS NULL`;
-            }
-        } else {
-            where2 = `${name2} = "${value2}"`;
-        }
-    }
-
-    if (where1 && where2) {
-        where = `${where1} AND ${where2}`;
-    } else if (!where1 && where2) {
-        where = `${where2}`;
-    } else if (where1 && !where2) {
-        where = `${where1}`;
-    } else {
-        where = null
-    }
+    let where = `${name} = "${value}"`;
 
     res.json(
         await db.fetchAllDoubleJoinWhere(
@@ -91,6 +57,67 @@ router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
         )
     );
 });
+
+// Report classroom View route
+router.post("/view/where",
+    (req, res) => filterReport(req, res));
+
+async function filterReport(req, res) {
+    let data = req.body;
+    let columns = Object.keys(data);
+    let filteredColumns = columns.filter((key) => data[key] != "Alla");
+    let filter;
+
+    let params = filteredColumns.map(key => {
+        if (key === "solved") {
+            if (data[key] === "Alla") {
+                filter = null;
+            } else if (data[key] === "Åtgärdat") {
+                filter = `report.solved IS NOT NULL`;
+            } else {
+                filter = `report.solved IS NULL`;
+            }
+        } else {
+            filter = `${key} = "${data[key]}"`
+        }
+        return filter;
+    });
+
+    let where = params.join(" AND ");
+
+    if (!where) {
+        res.json(
+            await db.fetchAllDoubleJoin(
+                `report`,
+                `classroom`,
+                `device`,
+                `COALESCE(
+                (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+                report.item_group = "classroom" AND report.item_id = classroom.id
+                )`,
+                `report.item_group = "device" AND report.item_id = device.id`,
+                select,
+                "report.created DESC"
+            )
+        );
+    } else {
+        res.json(
+            await db.fetchAllDoubleJoinWhere(
+                `report`,
+                `classroom`,
+                `device`,
+                `COALESCE(
+                (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+                report.item_group = "classroom" AND report.item_id = classroom.id
+                )`,
+                `report.item_group = "device" AND report.item_id = device.id`,
+                where,
+                select,
+                "report.created DESC"
+            )
+        );
+    }
+};
 
 // Report classroom View route
 router.get("/classroom/view/:name/:itemid", async (req, res) => {

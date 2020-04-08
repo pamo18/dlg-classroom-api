@@ -11,6 +11,12 @@ router.get("/", async (req, res) => {
     );
 });
 
+router.get("/building", async (req, res) => {
+    res.json(
+        await db.fetchAll("classroom_building")
+    );
+});
+
 // Type Index route
 router.get("/type", async (req, res) => {
     res.json(

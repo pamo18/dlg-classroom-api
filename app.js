@@ -15,7 +15,6 @@ const index = require('./routes/index.js');
 const device = require('./routes/device/device.js');
 // Classroom routes
 const classroom = require('./routes/classroom/classroom.js');
-const building = require('./routes/building/building.js');
 // Person route
 const person = require('./routes/person/person.js');
 // Report routes
@@ -37,7 +36,6 @@ app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x
 app.use("/", index);
 app.use("/device", device);
 app.use("/classroom", classroom);
-app.use("/building", building);
 app.use("/person", person);
 app.use("/report", report);
 

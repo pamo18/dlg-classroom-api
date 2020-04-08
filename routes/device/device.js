@@ -14,14 +14,14 @@ router.get("/", async (req, res) => {
 // Category Index route
 router.get("/category", async (req, res) => {
     res.json(
-        await db.fetchAll("category")
+        await db.fetchAll("device_category")
     );
 });
 
 // Brand Index route
 router.get("/brand", async (req, res) => {
     res.json(
-        await db.fetchAll("brand")
+        await db.fetchAll("device_brand")
     );
 });
 
@@ -72,6 +72,62 @@ router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
     }
 
 });
+
+// Device Update route
+router.post("/view/where",
+    (req, res) => filterDevice(req, res));
+
+async function filterDevice(req, res) {
+    let data = req.body;
+    let columns = Object.keys(data);
+    let filteredColumns = columns.filter((key) => data[key] != "Alla");
+    let filter;
+    let having;
+
+    let params = filteredColumns.map(key => {
+        if (key === "solved") {
+            if (data[key] === "Alla") {
+                filter = null;
+            } else if (data[key] === "Åtgärdat") {
+                filter = `r.id IS NOT NULL`;
+                having = "= 0";
+            } else {
+                filter = `r.id IS NOT NULL`;
+                having = "> 0";
+            }
+        } else {
+            filter = `${key} = "${data[key]}"`
+        }
+        return filter;
+    });
+
+    let where = params.join(" AND ");
+    let select = `
+        SELECT device.*
+    `;
+
+    if (!where) {
+        res.json(
+            await db.fetchAll("device")
+        );
+    } else if (having) {
+        res.json(
+            await db.fetchAllJoinHaving(
+                select,
+                `device`,
+                `report r`,
+                `r.item_group = "device" AND r.item_id = device.id`,
+                `(SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) ${having}`,
+                where,
+                `device.id`
+            )
+        );
+    } else {
+        res.json(
+            await db.fetchAllWhere("device", where)
+        );
+    }
+}
 
 // Device Update route
 router.post("/update/:id",
