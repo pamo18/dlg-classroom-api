@@ -7,7 +7,7 @@ let select = `
     classroom.id AS classroom_id,
     classroom.name AS classroom_name,
     classroom.type AS classroom_type,
-    classroom.location AS classroom_location,
+    classroom.building AS classroom_building,
     classroom.level AS classroom_level,
     classroom.image AS classroom_image,
     device.id AS device_id,
@@ -196,7 +196,7 @@ router.get("/check/:itemGroup/:itemid", async (req, res) => {
     }
 });
 
-// Report Check route
+// Report Filter route
 router.get("/filter", async (req, res) => {
 
     res.json(

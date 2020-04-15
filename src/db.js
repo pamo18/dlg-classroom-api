@@ -30,6 +30,24 @@ async function dbQuery(sql) {
 
 
 /**
+ * Get the person if exists
+ * @async
+ * @returns object
+ */
+async function login(email) {
+    let sql = `
+        SELECT *
+        FROM person
+        WHERE
+        email = "${email}";`;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
  * Get all items from the db table.
  * @async
  * @returns object

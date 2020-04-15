@@ -3,6 +3,7 @@
  */
 
 "use strict";
+require('dotenv').config();
 
 const port = 8333;
 const express = require("express");
@@ -19,6 +20,10 @@ const classroom = require('./routes/classroom/classroom.js');
 const person = require('./routes/person/person.js');
 // Report routes
 const report = require('./routes/report/report.js');
+// Auth, login and register routes
+const auth = require('./routes/auth/auth.js');
+const login = require('./routes/auth/login.js');
+const register = require('./routes/auth/register.js');
 
 // This is middleware called for all routes.
 // Middleware takes three parameters.
@@ -38,6 +43,9 @@ app.use("/device", device);
 app.use("/classroom", classroom);
 app.use("/person", person);
 app.use("/report", report);
+app.use("/auth", auth);
+app.use("/login", login);
+app.use("/register", register);
 
 // Add routes for 404 and error handling
 // Catch 404 and forward to error handler
