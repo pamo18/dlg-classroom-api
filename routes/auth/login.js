@@ -15,7 +15,7 @@ async function login(req, res) {
 
     let person = await db.fetchAllWhere("person", where);
 
-    if (!person) {
+    if (!person.length > 0) {
          return res.json({
                 person: false,
                 email: false,
