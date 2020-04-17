@@ -4,6 +4,7 @@ var router = express.Router();
 const db = require("../../src/db.js");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const saltRounds = 10;
 
 router.post("/",
     (req, res) => login(req, res));
@@ -52,6 +53,51 @@ async function login(req, res) {
                 password: false,
                 token: null
             });
+        }
+    });
+};
+
+router.post("/password",
+    (req, res) => changePassword(req, res));
+
+async function changePassword(req, res) {
+    let email = req.body.email;
+    let oldPassword = req.body.oldPassword;
+    let newPassword = req.body.newPassword;
+    let where = `email = "${email}"`;
+
+    let person = await db.fetchAllWhere("person", where);
+
+    if (!person.length > 0) {
+         return res.json({ err: "Personen hittafes inte" });
+    }
+
+    let personData = person[0];
+    let hash = personData.password;
+
+    bcrypt.compare(oldPassword, hash, function(err, match) {
+        if (err) {
+            return res.json({
+                err: err
+            });
+        }
+
+        if (match) {
+            bcrypt.hash(newPassword, saltRounds, async (err, hash) => {
+                if (err) {
+                    return res.json({
+                        err: err
+                    });
+                }
+
+                let where = `id = "${req.params.id}"`;
+
+                res.json(
+                    await db.update("person", { password: hash }, where)
+                );
+            });
+        } else {
+            res.json({ err: "Ogiltid lösnord!" });
         }
     });
 };

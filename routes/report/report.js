@@ -4,6 +4,7 @@ const db = require("../../src/db.js");
 let select = `
     SELECT
     report.*,
+    (SELECT CONCAT(firstname, " ", lastname) FROM person WHERE id = report.person_id) AS person,
     classroom.id AS classroom_id,
     classroom.name AS classroom_name,
     classroom.type AS classroom_type,
