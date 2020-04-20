@@ -24,6 +24,7 @@ const report = require('./routes/report/report.js');
 const auth = require('./routes/auth/auth.js');
 const login = require('./routes/auth/login.js');
 const register = require('./routes/auth/register.js');
+const password = require('./routes/auth/password.js');
 
 // This is middleware called for all routes.
 // Middleware takes three parameters.
@@ -46,6 +47,7 @@ app.use("/report", report);
 app.use("/auth", auth);
 app.use("/login", login);
 app.use("/register", register);
+app.use("/password", password);
 
 // Add routes for 404 and error handling
 // Catch 404 and forward to error handler

@@ -61,15 +61,15 @@ router.post("/password",
     (req, res) => changePassword(req, res));
 
 async function changePassword(req, res) {
-    let email = req.body.email;
+    let id = req.body.id;
     let oldPassword = req.body.oldPassword;
     let newPassword = req.body.newPassword;
-    let where = `email = "${email}"`;
+    let where = `id = "${id}"`;
 
     let person = await db.fetchAllWhere("person", where);
 
     if (!person.length > 0) {
-         return res.json({ err: "Personen hittafes inte" });
+         return res.json({ err: "Personen hittades inte." });
     }
 
     let personData = person[0];
@@ -90,14 +90,12 @@ async function changePassword(req, res) {
                     });
                 }
 
-                let where = `id = "${req.params.id}"`;
-
                 res.json(
                     await db.update("person", { password: hash }, where)
                 );
             });
         } else {
-            res.json({ err: "Ogiltid lösnord!" });
+            res.json({ err: "Gammal lösnord ogiltid!" });
         }
     });
 };
