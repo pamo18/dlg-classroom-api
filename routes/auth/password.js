@@ -87,8 +87,41 @@ async function forgotPassword(req, res) {
         to: personData.email,
         subject: "Återställa Lösenord",
         text: `Klicka på länken nedan för att återställa din lösenord.
-            http://localhost:3000/reset/${token}
-        `
+            https://dlg.klassrum.online/reset/${token}`,
+        html: `
+        <head>
+            <style type = text/css>
+                p {
+                    text-align: center;
+                }
+
+                .button {
+                    width: 20rem;
+                    margin: 0 auto;
+                    font-size: 1.5rem;
+                    padding: 0.6rem;
+                    -webkit-transition-duration: 0.2s;
+                    transition-duration: 0.2s;
+                    background-color: rgb(46, 174, 52, 0.7);
+                    color: white;
+                    box-sizing: border-box;
+                    display: block;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    border: none;
+                    cursor: pointer;
+                }
+
+                .button:hover {
+                    background-color: rgb(46, 174, 52, 1);
+                }
+            </style>
+        </head>
+        <body>
+            <p>Klicka på länken nedan för att återställa din lösenord.</p>
+            <a class="button" href="https://dlg.klassrum.online/reset/${token}">Återställ Lösnord</a>
+        </body>`
     };
 
     transporter.sendMail(mailOptions, function(err, info) {
