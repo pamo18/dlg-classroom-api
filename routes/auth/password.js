@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 const nodemailer = require('nodemailer');
+const emailAuth = require("../../email.json");
 
 router.post("/change",
     (req, res) => changePassword(req, res));
@@ -73,12 +74,13 @@ async function forgotPassword(req, res) {
 
     let transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        requireTLS: true,
+        port: 465,
+        secure: true,
         auth: {
-            user: "pamosystems@gmail.com",
-            pass: process.env.PASS
+            type: "OAuth2",
+            user: "paul@pamosystems.com",
+            serviceClient: emailAuth.client_id,
+            privateKey: emailAuth.private_key
         }
     });
 
@@ -124,7 +126,8 @@ async function forgotPassword(req, res) {
         </body>`
     };
 
-    transporter.sendMail(mailOptions, function(err, info) {
+    await transporter.verify();
+    await transporter.sendMail(mailOptions, function(err, info) {
         if (err) {
             console.log(err);
         } else {

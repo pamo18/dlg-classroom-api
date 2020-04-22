@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const db = require("../../src/db.js");
+const nodemailer = require('nodemailer');
+const emailAuth = require("../../email.json");
 let select = `
     SELECT
     report.*,
@@ -207,13 +209,98 @@ router.get("/filter", async (req, res) => {
 
 // Report Create route
 router.post("/create",
-    (req, res) => createReport(req, res));
+    (req, res, next) => createReport(req, res, next),
+    (req, res, next) => getPerson(req, res, next),
+    (req, res) => sendMail(req, res));
 
-async function createReport(req, res) {
-    res.json(
-        await db.insert("report", req.body)
-    );
+async function createReport(req, res, next) {
+    let result = await db.insert("report", req.body);
+
+    req.body.result = result;
+    req.body.id = result.insertId;
+    next();
 }
+
+async function getPerson(req, res, next) {
+    let personid = req.body.person_id;
+    let where = `id = "${personid}"`;
+    let person = await db.fetchAllWhere("person", where)
+    req.body.person = person[0];
+    next();
+}
+
+async function sendMail(req, res) {
+    let report = req.body;
+    let person = report.person;
+    let transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+            type: "OAuth2",
+            user: "paul@pamosystems.com",
+            serviceClient: emailAuth.client_id,
+            privateKey: emailAuth.private_key
+        }
+    });
+
+    let mailOptions = {
+        from: "paul@pamosystems.com",
+        to: "pauljm80@gmail.com",
+        subject: report.name,
+        text: report.message,
+        html: `
+        <head>
+            <style type = text/css>
+                p {
+                    text-align: center;
+                }
+
+                .button {
+                    width: 20rem;
+                    margin: 0 auto;
+                    font-size: 1.5rem;
+                    padding: 0.6rem;
+                    -webkit-transition-duration: 0.2s;
+                    transition-duration: 0.2s;
+                    background-color: rgb(46, 174, 52, 0.7);
+                    color: white;
+                    box-sizing: border-box;
+                    display: block;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    border: none;
+                    cursor: pointer;
+                }
+
+                .button:hover {
+                    background-color: rgb(46, 174, 52, 1);
+                }
+            </style>
+        </head>
+        <body>
+            <p>${report.message}</p>
+            <a class="button" href="https://dlg.klassrum.online/report/page/${report.id}/${report.item_group}/${report.item_id}">Läs mer</a>
+            <p>Från:</p>
+            <p>${person.firstname} ${person.lastname}</p>
+            <p>${person.email}</p>
+        </body>`
+    };
+
+    await transporter.verify();
+    await transporter.sendMail(mailOptions, function(err, info) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
+    });
+
+    res.json(
+        report.result
+    );
+};
 
 // Report Update route
 router.post("/update/:id",
