@@ -45,7 +45,7 @@ async function changePassword(req, res) {
                 );
             });
         } else {
-            res.json({ err: "Gammal lösnord ogiltid!" });
+            res.json({ err: "Gammal lösenord ogiltid!" });
         }
     });
 };
@@ -86,7 +86,7 @@ async function forgotPassword(req, res) {
         from: "paul@pamosystems.com",
         to: personData.email,
         subject: "Återställa Lösenord",
-        text: `Klicka på länken nedan för att återställa din lösenord.
+        text: `Klicka på länken nedan för att återställa ditt lösenord.
             https://dlg.klassrum.online/reset/${token}`,
         html: `
         <head>
@@ -120,7 +120,7 @@ async function forgotPassword(req, res) {
         </head>
         <body>
             <p>Klicka på länken nedan för att återställa din lösenord.</p>
-            <a class="button" href="https://dlg.klassrum.online/reset/${token}">Återställ Lösnord</a>
+            <a class="button" href="https://dlg.klassrum.online/reset/${token}">Återställ Lösenord</a>
         </body>`
     };
 

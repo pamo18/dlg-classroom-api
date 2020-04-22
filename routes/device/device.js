@@ -36,7 +36,7 @@ async function createDevice(req, res) {
 }
 
 // Device View route
-router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
+router.get("/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
     let select = `

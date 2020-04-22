@@ -96,7 +96,7 @@ async function filterClassroom(req, res) {
 }
 
 // Classroom View route
-router.get("/view/:name/:value/:name2?/:value2?", async (req, res) => {
+router.get("/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
     let where = `${name} = "${value}"`;
@@ -137,7 +137,7 @@ async function deleteClassroom(req, res) {
 // Classroom Device Routes----------------------------------------------------//
 
 // Classroom Device View route
-router.get("/device/view/:name/:value/:name2?/:value2?", async (req, res) => {
+router.get("/device/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
 
