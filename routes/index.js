@@ -6,7 +6,7 @@ var router = express.Router();
 router.get('/', function(req, res, next) {
     const data = {
         data: {
-            status: "DLG Classroom Express server is running"
+            status: "The DLG Klassum server is running"
         }
     };
 

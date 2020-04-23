@@ -216,16 +216,20 @@ router.post("/create",
 async function createReport(req, res, next) {
     let result = await db.insert("report", req.body);
 
-    req.body.result = result;
     req.body.id = result.insertId;
+
+    res.json(result);
+
     next();
 }
 
 async function getPerson(req, res, next) {
     let personid = req.body.person_id;
     let where = `id = "${personid}"`;
-    let person = await db.fetchAllWhere("person", where)
+    let person = await db.fetchAllWhere("person", where);
+
     req.body.person = person[0];
+
     next();
 }
 
@@ -296,10 +300,6 @@ async function sendMail(req, res) {
             console.log('Email sent: ' + info.response);
         }
     });
-
-    res.json(
-        report.result
-    );
 };
 
 // Report Update route
