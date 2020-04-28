@@ -2,11 +2,10 @@
 var express = require('express');
 var router = express.Router();
 const db = require("../../src/db.js");
+const email = require("../../src/email.js");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
-const nodemailer = require('nodemailer');
-const emailAuth = require("../../email.json");
 
 router.post("/change",
     (req, res) => changePassword(req, res));
@@ -55,8 +54,8 @@ router.post("/forgot",
     (req, res) => forgotPassword(req, res));
 
 async function forgotPassword(req, res) {
-    let email = req.body.email;
-    let where = `email = "${email}"`;
+    let address = req.body.email;
+    let where = `email = "${address}"`;
 
     let person = await db.fetchAllWhere("person", where);
 
@@ -72,34 +71,22 @@ async function forgotPassword(req, res) {
     const secret = process.env.JWT_SECRET;
     const token = jwt.sign(payload, secret, { expiresIn: '1m'});
 
-    let transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            type: "OAuth2",
-            user: "paul@pamosystems.com",
-            serviceClient: emailAuth.client_id,
-            privateKey: emailAuth.private_key
-        }
-    });
-
-    let mailOptions = {
-        from: "paul@pamosystems.com",
-        to: personData.email,
-        subject: "Återställa Lösenord",
-        text: `Klicka på länken nedan för att återställa ditt lösenord.
-            https://dlg.klassrum.online/reset/${token}`,
-        html: `
+    let from = "paul@pamosystems.com";
+    let to = personData.email;
+    let subject = "Återställa Lösenord";
+    let text = `
+        Klicka på länken nedan för att återställa ditt lösenord.
+        https://dlg.klassrum.online/reset/${token}
+    `;
+    let html = `
         <head>
             <style type = text/css>
                 p {
-                    text-align: center;
+                    text-align: left;
                 }
 
                 .button {
                     width: 20rem;
-                    margin: 0 auto;
                     font-size: 1.5rem;
                     padding: 0.6rem;
                     -webkit-transition-duration: 0.2s;
@@ -123,17 +110,9 @@ async function forgotPassword(req, res) {
         <body>
             <p>Klicka på länken nedan för att återställa din lösenord.</p>
             <a class="button" href="https://dlg.klassrum.online/reset/${token}">Återställ Lösenord</a>
-        </body>`
-    };
+        </body>`;
 
-    await transporter.verify();
-    await transporter.sendMail(mailOptions, function(err, info) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log('Email sent: ' + info.response);
-        }
-    });
+    email.send(from, to, subject, text, html);
 };
 
 router.post("/reset",

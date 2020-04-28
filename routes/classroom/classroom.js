@@ -7,7 +7,7 @@ const db = require("../../src/db.js");
 // Index route
 router.get("/", async (req, res) => {
     res.json(
-        await db.fetchAll("classroom")
+        await db.fetchAllClassrooms()
     );
 });
 
@@ -44,53 +44,34 @@ async function filterClassroom(req, res) {
     let filteredColumns = columns.filter((key) => data[key] != "Alla");
     let filter;
     let having;
+    let params = [];
 
-    let params = filteredColumns.map(key => {
+    filteredColumns.forEach(key => {
         if (key === "solved") {
-            if (data[key] === "Alla") {
-                filter = null;
-            } else if (data[key] === "Åtgärdat") {
-                filter = `r.id IS NOT NULL`;
-                having = "= 0";
+            if (data[key] === "OK") {
+                having = "working = 1";
             } else {
-                filter = `r.id IS NOT NULL`;
-                having = "> 0";
+                having = "working = 0";
             }
         } else {
-            filter = `${key} = "${data[key]}"`
+            filter = `${key} = "${data[key]}"`;
+            params.push(filter);
         }
-        return filter;
     });
 
     let where = params.join(" AND ");
-    let select = `
-        SELECT classroom.*
-    `;
 
-    if (!where) {
+    if (!where && !having) {
         res.json(
-            await db.fetchAll("classroom")
+            await db.fetchAllClassrooms()
         );
     } else if (having) {
         res.json(
-            await db.fetchAllDoubleJoinHaving(
-                select,
-                `classroom`,
-                `device2classroom dc`,
-                `report r`,
-                `dc.classroom_id = classroom.id`,
-                `COALESCE(
-                (r.item_group = "classroom" AND r.item_id = classroom.id),
-                (r.item_group = "device" AND r.item_id = dc.device_id))`,
-                `SUM((SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
-                (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = dc.device_id AND solved IS NULL)) ${having}`,
-                where,
-                `classroom.id`
-            )
+            await db.fetchClassroomsHaving(having, where)
         );
     } else {
         res.json(
-            await db.fetchAllWhere("classroom", where)
+            await db.fetchAllClassroomsWhere(where)
         );
     }
 }
@@ -102,7 +83,7 @@ router.get("/view/:name/:value", async (req, res) => {
     let where = `${name} = "${value}"`;
 
     res.json(
-        await db.fetchAllWhere("classroom", where)
+        await db.fetchAllClassroomsWhere(where)
     );
 });
 
@@ -140,13 +121,10 @@ async function deleteClassroom(req, res) {
 router.get("/device/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
+    let where = `${name} = "${value}"`
 
     res.json(
-        await db.fetchAllJoinWhere(
-            "device2classroom",
-            "device",
-            "device2classroom.device_id = device.id",
-            `device2classroom.${name} = "${value}"`)
+        await db.fetchClassroomDevices(where)
     );
 });
 

@@ -52,6 +52,243 @@ async function login(email) {
  * @async
  * @returns object
  */
+async function fetchAllClassrooms() {
+    let sql = `
+        SELECT
+        classroom.*,
+        SUM(
+        (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        ) = 0 AS working
+
+        FROM classroom
+
+        LEFT JOIN device2classroom
+        ON device2classroom.classroom_id = classroom.id
+
+        GROUP BY classroom.id;
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table.
+ * @async
+ * @returns object
+ */
+async function fetchAllClassroomsWhere(where) {
+    let sql = `
+        SELECT
+        classroom.*,
+        SUM(
+        (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        ) = 0 AS working
+
+        FROM classroom
+
+        LEFT JOIN device2classroom
+        ON device2classroom.classroom_id = classroom.id
+
+        WHERE ${where}
+        GROUP BY classroom.id;
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchClassroomsHaving(having, where = null) {
+    let sql = `
+        SELECT
+        classroom.*,
+        SUM(
+        (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        ) = 0 AS working
+
+        FROM classroom
+
+        LEFT JOIN device2classroom
+    	ON device2classroom.classroom_id = classroom.id
+
+        ${where ? 'WHERE ' + where : ""}
+        GROUP BY classroom.id
+
+        HAVING ${having};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables with condition and join.
+ * @async
+ * @returns object
+ */
+async function fetchClassroomDevices(where) {
+    let sql = `
+        SELECT
+        *,
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
+        (
+            SELECT (name)
+            FROM classroom
+            LEFT JOIN device2classroom
+            ON device2classroom.classroom_id = classroom.id
+            WHERE device2classroom.device_id = device.id
+
+        ) AS classroom_name
+
+        FROM device2classroom
+
+        LEFT JOIN device
+    	ON device2classroom.device_id = device.id
+
+        WHERE ${where};
+        `;
+
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table.
+ * @async
+ * @returns object
+ */
+async function fetchAllDevices() {
+    let sql = `
+        SELECT
+        device.*,
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
+        (
+            SELECT (name)
+            FROM classroom
+            LEFT JOIN device2classroom
+            ON device2classroom.classroom_id = classroom.id
+            WHERE device2classroom.device_id = device.id
+
+        ) AS classroom_name
+
+        FROM device;
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table.
+ * @async
+ * @returns object
+ */
+async function fetchAllDevicesWhere(where) {
+    let sql = `
+        SELECT
+        device.*,
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
+        (
+            SELECT (name)
+            FROM classroom
+            LEFT JOIN device2classroom
+            ON device2classroom.classroom_id = classroom.id
+            WHERE device2classroom.device_id = device.id
+
+        ) AS classroom_name
+
+        FROM device
+
+        WHERE ${where};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchDevicesHaving(having, where = null) {
+    let sql = `
+        SELECT
+        device.*,
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
+        (
+            SELECT (name)
+            FROM classroom
+            LEFT JOIN device2classroom
+            ON device2classroom.classroom_id = classroom.id
+            WHERE device2classroom.device_id = device.id
+
+        ) AS classroom_name
+
+        FROM device
+
+        ${where ? 'WHERE ' + where : ""}
+        GROUP BY device.id
+        HAVING ${having};
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables with condition and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllDevicesAvailable() {
+    let sql = `
+        SELECT
+        *,
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working
+        FROM device
+
+        LEFT JOIN device2classroom
+    	ON device.id = device2classroom.device_id
+
+        WHERE device2classroom.device_id IS NULL;
+        `;
+
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db table.
+ * @async
+ * @returns object
+ */
 async function fetchAll(table) {
     let sql = `SELECT * FROM ${table};`;
     let res = await dbQuery(sql);
@@ -73,164 +310,79 @@ async function fetchAllWhere(table, where) {
 }
 
 
+/**
+ * Report Select statement
+ *
+ * @returns string
+ */
+function reportSelect() {
+    return `
+        SELECT
+        report.*,
+        (SELECT CONCAT(firstname, " ", lastname) FROM person WHERE id = report.person_id) AS person,
+        classroom.id AS classroom_id,
+        classroom.name AS classroom_name,
+        classroom.type AS classroom_type,
+        classroom.building AS classroom_building,
+        classroom.level AS classroom_level,
+        classroom.image AS classroom_image,
+        device.id AS device_id,
+        device.brand AS device_brand,
+        device.model AS device_model,
+        device.category AS device_category,
+        device.url AS device_url
+    `;
+}
+
+
 
 /**
- * Get all items from the db tables with condition and join.
+ * Get all items from the db tables and join.
  * @async
  * @returns object
  */
-async function fetchAllJoinWhere(table1, table2, on, where, orderBy = null) {
+async function fetchAllReports() {
+    let select = reportSelect();
     let sql = `
-        SELECT * FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on}
+        ${select}
+        FROM report
+
+        LEFT JOIN classroom
+    	ON COALESCE(
+        (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+        report.item_group = "classroom" AND report.item_id = classroom.id)
+
+        LEFT JOIN device
+    	ON report.item_group = "device" AND report.item_id = device.id
+        ORDER BY report.created DESC;
+        `;
+    let res = await dbQuery(sql);
+
+    return res;
+}
+
+
+
+/**
+ * Get all items from the db tables and join.
+ * @async
+ * @returns object
+ */
+async function fetchAllReportsWhere(where) {
+    let select = reportSelect();
+    let sql = `
+        ${select}
+        FROM report
+
+        LEFT JOIN classroom
+    	ON COALESCE(
+        (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+        report.item_group = "classroom" AND report.item_id = classroom.id)
+
+        LEFT JOIN device
+    	ON report.item_group = "device" AND report.item_id = device.id
         WHERE ${where}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllJoinHaving(select, table1, table2, on1, having, where = null, groupBy = null, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        ${where ? 'WHERE ' + where : ""}
-        ${groupBy ? 'GROUP BY ' + groupBy : ""}
-        HAVING ${having}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllDoubleJoin(table1, table2, table3, on1, on2, select, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllDoubleJoinWhere(table1, table2, table3, on1, on2, where, select, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2}
-        WHERE ${where}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllDoubleJoinHaving(select, table1, table2, table3, on1, on2, having, where = null, groupBy = null, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2}
-        ${where ? 'WHERE ' + where : ""}
-        ${groupBy ? 'GROUP BY ' + groupBy : ""}
-        HAVING ${having}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllTrippleJoin(select, table1, table2, table3, table4, on1, on2, on3, where = null, groupBy = null, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2}
-        LEFT JOIN ${table4}
-    	ON ${on3}
-        ${where ? 'WHERE ' + where : ""}
-        ${groupBy ? 'GROUP BY ' + groupBy : ""}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
-        `;
-    let res = await dbQuery(sql);
-
-    return res;
-}
-
-
-
-/**
- * Get all items from the db tables and join.
- * @async
- * @returns object
- */
-async function fetchAllTrippleJoinWhere(table1, table2, table3, table4, on1, on2, on3, where, select, orderBy = null) {
-    let sql = `
-        ${select}
-        FROM ${table1}
-        LEFT JOIN ${table2}
-    	ON ${on1}
-        LEFT JOIN ${table3}
-    	ON ${on2}
-        LEFT JOIN ${table4}
-    	ON ${on3}
-        WHERE ${where}
-        ${orderBy ? 'ORDER BY ' + orderBy : ""};
+        ORDER BY report.created DESC;
         `;
     let res = await dbQuery(sql);
 
@@ -296,15 +448,18 @@ async function deleteFrom(table, where) {
 
 
 module.exports = {
+    fetchAllClassrooms: fetchAllClassrooms,
+    fetchAllClassroomsWhere: fetchAllClassroomsWhere,
+    fetchClassroomsHaving: fetchClassroomsHaving,
+    fetchClassroomDevices:fetchClassroomDevices,
+    fetchAllDevices: fetchAllDevices,
+    fetchAllDevicesWhere:fetchAllDevicesWhere,
+    fetchDevicesHaving: fetchDevicesHaving,
+    fetchAllDevicesAvailable: fetchAllDevicesAvailable,
     fetchAll: fetchAll,
     fetchAllWhere: fetchAllWhere,
-    fetchAllJoinWhere: fetchAllJoinWhere,
-    fetchAllJoinHaving: fetchAllJoinHaving,
-    fetchAllDoubleJoin: fetchAllDoubleJoin,
-    fetchAllDoubleJoinWhere: fetchAllDoubleJoinWhere,
-    fetchAllDoubleJoinHaving: fetchAllDoubleJoinHaving,
-    fetchAllTrippleJoin: fetchAllTrippleJoin,
-    fetchAllTrippleJoinWhere: fetchAllTrippleJoinWhere,
+    fetchAllReports: fetchAllReports,
+    fetchAllReportsWhere: fetchAllReportsWhere,
     insert: insert,
     update: update,
     deleteFrom: deleteFrom

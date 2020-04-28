@@ -1,40 +1,12 @@
 var express = require('express');
 var router = express.Router();
 const db = require("../../src/db.js");
-const nodemailer = require('nodemailer');
-const emailAuth = require("../../email.json");
-let select = `
-    SELECT
-    report.*,
-    (SELECT CONCAT(firstname, " ", lastname) FROM person WHERE id = report.person_id) AS person,
-    classroom.id AS classroom_id,
-    classroom.name AS classroom_name,
-    classroom.type AS classroom_type,
-    classroom.building AS classroom_building,
-    classroom.level AS classroom_level,
-    classroom.image AS classroom_image,
-    device.id AS device_id,
-    device.brand AS device_brand,
-    device.model AS device_model,
-    device.category AS device_category,
-    device.url AS device_url
-`;
+const email = require("../../src/email.js");
 
 // Index route
 router.get("/", async (req, res) => {
     res.json(
-        await db.fetchAllDoubleJoin(
-            `report`,
-            `classroom`,
-            `device`,
-            `COALESCE(
-            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-            report.item_group = "classroom" AND report.item_id = classroom.id
-            )`,
-            `report.item_group = "device" AND report.item_id = device.id`,
-            select,
-            "report.created DESC"
-        )
+        await db.fetchAllReports()
     );
 });
 
@@ -45,19 +17,7 @@ router.get("/view/:name/:value", async (req, res) => {
     let where = `${name} = "${value}"`;
 
     res.json(
-        await db.fetchAllDoubleJoinWhere(
-            `report`,
-            `classroom`,
-            `device`,
-            `COALESCE(
-            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-            report.item_group = "classroom" AND report.item_id = classroom.id
-            )`,
-            `report.item_group = "device" AND report.item_id = device.id`,
-            where,
-            select,
-            "report.created DESC"
-        )
+        await db.fetchAllReportsWhere(where)
     );
 });
 
@@ -75,7 +35,7 @@ async function filterReport(req, res) {
         if (key === "solved") {
             if (data[key] === "Alla") {
                 filter = null;
-            } else if (data[key] === "Åtgärdat") {
+            } else if (data[key] === "OK") {
                 filter = `report.solved IS NOT NULL`;
             } else {
                 filter = `report.solved IS NULL`;
@@ -90,34 +50,11 @@ async function filterReport(req, res) {
 
     if (!where) {
         res.json(
-            await db.fetchAllDoubleJoin(
-                `report`,
-                `classroom`,
-                `device`,
-                `COALESCE(
-                (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-                report.item_group = "classroom" AND report.item_id = classroom.id
-                )`,
-                `report.item_group = "device" AND report.item_id = device.id`,
-                select,
-                "report.created DESC"
-            )
+            await db.fetchAllReports()
         );
     } else {
         res.json(
-            await db.fetchAllDoubleJoinWhere(
-                `report`,
-                `classroom`,
-                `device`,
-                `COALESCE(
-                (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-                report.item_group = "classroom" AND report.item_id = classroom.id
-                )`,
-                `report.item_group = "device" AND report.item_id = device.id`,
-                where,
-                select,
-                "report.created DESC"
-            )
+            await db.fetchAllReportsWhere(where)
         );
     }
 };
@@ -129,19 +66,7 @@ router.get("/classroom/view/:name/:itemid", async (req, res) => {
     let where = `item_group = "classroom" AND ${name} = "${itemid}"`;
 
     res.json(
-        await db.fetchAllDoubleJoinWhere(
-            `report`,
-            `classroom`,
-            `device`,
-            `COALESCE(
-            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-            report.item_group = "classroom" AND report.item_id = classroom.id
-            )`,
-            `report.item_group = "device" AND report.item_id = device.id`,
-            where,
-            select,
-            "report.created DESC"
-        )
+        await db.fetchAllReportsWhere(where)
     );
 });
 
@@ -152,58 +77,15 @@ router.get("/device/view/:name/:itemid", async (req, res) => {
     let where = `item_group = "device" AND ${name} = "${itemid}"`;
 
     res.json(
-        await db.fetchAllDoubleJoinWhere(
-            `report`,
-            `classroom`,
-            `device`,
-            `COALESCE(
-            (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
-            report.item_group = "classroom" AND report.item_id = classroom.id
-            )`,
-            `report.item_group = "device" AND report.item_id = device.id`,
-            where,
-            select,
-            "report.created DESC"
-        )
+        await db.fetchAllReportsWhere(where)
     );
-});
-
-// Report Check route
-router.get("/check/:itemGroup/:itemid", async (req, res) => {
-    let itemGroup = req.params.itemGroup;
-    let itemid = req.params.itemid;
-
-    if (itemGroup === "report") {
-        res.json(
-            await db.fetchAllWhere("report", `id = "${itemid}" AND solved IS NULL`)
-        );
-    } else {
-        let where = `item_group = "${itemGroup}" AND item_id = "${itemid}" AND solved IS NULL`;
-
-        if (itemGroup === "classroom") {
-            let res1 = await db.fetchAllJoinWhere(
-                `device2classroom`,
-                `report`,
-                `report.item_group = "device" AND report.item_id = device2classroom.device_id AND report.solved IS NULL`,
-                `classroom_id = ${itemid} AND report.id IS NOT NULL`
-            );
-
-            if (res1.length > 0) {
-                return res.json(res1);
-            }
-        }
-
-        res.json(
-            await db.fetchAllWhere("report", where)
-        );
-    }
 });
 
 // Report Filter route
 router.get("/filter", async (req, res) => {
 
     res.json(
-        [{solved: "Åtgärdat"}, {solved: "Att göra"}]
+        [{solved: "OK"}, {solved: "Att göra"}]
     );
 });
 
@@ -211,7 +93,7 @@ router.get("/filter", async (req, res) => {
 router.post("/create",
     (req, res, next) => createReport(req, res, next),
     (req, res, next) => getPerson(req, res, next),
-    (req, res) => sendMail(req, res));
+    (req, res) => sendCreateEmail(req, res));
 
 async function createReport(req, res, next) {
     let result = await db.insert("report", req.body);
@@ -233,36 +115,22 @@ async function getPerson(req, res, next) {
     next();
 }
 
-async function sendMail(req, res) {
+async function sendCreateEmail(req, res) {
     let report = req.body;
     let person = report.person;
-    let transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            type: "OAuth2",
-            user: "paul@pamosystems.com",
-            serviceClient: emailAuth.client_id,
-            privateKey: emailAuth.private_key
-        }
-    });
-
-    let mailOptions = {
-        from: "paul@pamosystems.com",
-        to: "pauljm80@gmail.com",
-        subject: report.name,
-        text: report.message,
-        html: `
+    let from = "paul@pamosystems.com";
+    let to = "pauljm80@gmail.com";
+    let subject = report.name;
+    let text = report.message;
+    let html =`
         <head>
             <style type = text/css>
                 p {
-                    text-align: center;
+                    text-align: left;
                 }
 
                 .button {
                     width: 20rem;
-                    margin: 0 auto;
                     font-size: 1.5rem;
                     padding: 0.6rem;
                     -webkit-transition-duration: 0.2s;
@@ -284,23 +152,100 @@ async function sendMail(req, res) {
             </style>
         </head>
         <body>
+            <h1>${report.name}</h1>
             <p>${report.message}</p>
             <a class="button" href="https://dlg.klassrum.online/report/page/${report.id}/${report.item_group}/${report.item_id}">Läs mer</a>
-            <p>Från:</p>
-            <p>${person.firstname} ${person.lastname}</p>
-            <p>${person.email}</p>
-        </body>`
+            <p>
+                Från:</br>
+                ${person.firstname} ${person.lastname}</br>
+                ${person.email}
+            </p>
+        </body>`;
+
+    email.send(from, to, subject, text, html);
+};
+
+// Report Solved route
+router.post("/solved/:id",
+    (req, res, next) => updateSolvedReport(req, res, next),
+    (req, res, next) => getPerson(req, res, next),
+    (req, res) => sendSolvedEmail(req, res));
+
+async function updateSolvedReport(req, res, next) {
+    let where = `id = "${req.params.id}"`;
+    let data = {
+        name: req.body.name,
+        message: req.body.message,
+        action: req.body.action,
+        solved: req.body.solved
     };
 
-    await transporter.verify();
-    await transporter.sendMail(mailOptions, function(err, info) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log('Email sent: ' + info.response);
-        }
-    });
-};
+    res.json(
+        await db.update("report", data, where)
+    );
+
+    next();
+}
+
+async function sendSolvedEmail(req, res) {
+    let report = req.body;
+    let person = report.person;
+    let from = "paul@pamosystems.com";
+    let to = person.email;
+    let subject = `Åtgärdat: ${report.name}`;
+    let text = report.action;
+    let html =`
+        <head>
+            <style type = text/css>
+                p {
+                    text-align: left;
+                }
+
+                .title {
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+
+                .button {
+                    width: 20rem;
+                    font-size: 1.5rem;
+                    padding: 0.6rem;
+                    -webkit-transition-duration: 0.2s;
+                    transition-duration: 0.2s;
+                    background-color: rgb(46, 174, 52, 0.7);
+                    color: white;
+                    box-sizing: border-box;
+                    display: block;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    border: none;
+                    cursor: pointer;
+                }
+
+                .button:hover {
+                    background-color: rgb(46, 174, 52, 1);
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Din ärende är nu åtgärdat!</h1>
+            <p>${report.action}</p>
+            <h2>Om ärendet</h2>
+            <p>
+                <span class="title">${report.name}</span></br>
+                ${report.message}
+            </p>
+            <a class="button" href="https://dlg.klassrum.online/report/page/${report.id}/${report.item_group}/${report.item_id}">Läs mer</a>
+            <p>
+                Hälsningar</br>
+                ${report.from.firstname} ${report.from.lastname}</br>
+                ${report.from.email}
+            </p>
+        </body>`;
+
+        email.send(from, to, subject, text, html);
+}
 
 // Report Update route
 router.post("/update/:id",
@@ -308,9 +253,15 @@ router.post("/update/:id",
 
 async function updateReport(req, res) {
     let where = `id = "${req.params.id}"`;
+    let data = {
+        name: req.body.name,
+        message: req.body.message,
+        action: req.body.action,
+        solved: req.body.solved
+    };
 
     res.json(
-        await db.update("report", req.body, where)
+        await db.update("report", data, where)
     );
 }
 

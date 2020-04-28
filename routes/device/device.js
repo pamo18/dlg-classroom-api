@@ -7,7 +7,7 @@ const db = require("../../src/db.js");
 // Index route
 router.get("/", async (req, res) => {
     res.json(
-        await db.fetchAll("device")
+        await db.fetchAllDevices()
     );
 });
 
@@ -39,38 +39,11 @@ async function createDevice(req, res) {
 router.get("/view/:name/:value", async (req, res) => {
     let name = req.params.name;
     let value = req.params.value;
-    let select = `
-        SELECT
-        device.*,
-        classroom.id AS classroom_id,
-        classroom.name AS classroom_name
-    `;
+    let where = `${name} = "${value}"`;
 
-    if (value === "Alla") {
-        res.json(
-            await db.fetchAllDoubleJoin(
-                "device",
-                "device2classroom",
-                "classroom",
-                "device.id = device2classroom.device_id",
-                "classroom.id = device2classroom.classroom_id",
-                select
-            )
-        );
-    } else {
-        res.json(
-            await db.fetchAllDoubleJoinWhere(
-                "device",
-                "device2classroom",
-                "classroom",
-                "device.id = device2classroom.device_id",
-                "classroom.id = device2classroom.classroom_id",
-                `device.${name} = "${value}"`,
-                select
-            )
-        );
-    }
-
+    res.json(
+        await db.fetchAllDevicesWhere(where)
+    );
 });
 
 // Device Update route
@@ -83,48 +56,34 @@ async function filterDevice(req, res) {
     let filteredColumns = columns.filter((key) => data[key] != "Alla");
     let filter;
     let having;
+    let params = [];
 
-    let params = filteredColumns.map(key => {
+    filteredColumns.forEach(key => {
         if (key === "solved") {
-            if (data[key] === "Alla") {
-                filter = null;
-            } else if (data[key] === "Åtgärdat") {
-                filter = `r.id IS NOT NULL`;
-                having = "= 0";
+            if (data[key] === "OK") {
+                having = "working = 1";
             } else {
-                filter = `r.id IS NOT NULL`;
-                having = "> 0";
+                having = "working = 0";
             }
         } else {
-            filter = `${key} = "${data[key]}"`
+            filter = `${key} = "${data[key]}"`;
+            params.push(filter);
         }
-        return filter;
     });
 
     let where = params.join(" AND ");
-    let select = `
-        SELECT device.*
-    `;
 
-    if (!where) {
+    if (!where && !having) {
         res.json(
-            await db.fetchAll("device")
+            await db.fetchAllDevices()
         );
     } else if (having) {
         res.json(
-            await db.fetchAllJoinHaving(
-                select,
-                `device`,
-                `report r`,
-                `r.item_group = "device" AND r.item_id = device.id`,
-                `(SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) ${having}`,
-                where,
-                `device.id`
-            )
+            await db.fetchDevicesHaving(having, where)
         );
     } else {
         res.json(
-            await db.fetchAllWhere("device", where)
+            await db.fetchAllDevicesWhere(where)
         );
     }
 }
@@ -162,11 +121,7 @@ async function deleteClassroom(req, res) {
 // Available Devices route
 router.get("/available", async (req, res) => {
     res.json(
-        await db.fetchAllJoinWhere(
-            "device",
-            "device2classroom",
-            "device.id = device2classroom.device_id",
-            "device2classroom.device_id IS NULL")
+        await db.fetchAllDevicesAvailable()
     );
 });
 
