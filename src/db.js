@@ -58,13 +58,13 @@ async function fetchAllClassrooms() {
         classroom.*,
         SUM(
         (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
-        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL)
         ) = 0 AS working
 
         FROM classroom
 
-        LEFT JOIN device2classroom
-        ON device2classroom.classroom_id = classroom.id
+        LEFT JOIN device
+        ON device.classroom_id = classroom.id
 
         GROUP BY classroom.id;
         `;
@@ -86,13 +86,13 @@ async function fetchAllClassroomsWhere(where) {
         classroom.*,
         SUM(
         (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
-        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL)
         ) = 0 AS working
 
         FROM classroom
 
-        LEFT JOIN device2classroom
-        ON device2classroom.classroom_id = classroom.id
+        LEFT JOIN device
+        ON device.classroom_id = classroom.id
 
         WHERE ${where}
         GROUP BY classroom.id;
@@ -115,13 +115,13 @@ async function fetchClassroomsHaving(having, where = null) {
         classroom.*,
         SUM(
         (SELECT COUNT(*) FROM report WHERE item_group = "classroom" AND item_id = classroom.id AND solved IS NULL) +
-        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device2classroom.device_id AND solved IS NULL)
+        (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL)
         ) = 0 AS working
 
         FROM classroom
 
-        LEFT JOIN device2classroom
-    	ON device2classroom.classroom_id = classroom.id
+        LEFT JOIN device
+    	ON device.classroom_id = classroom.id
 
         ${where ? 'WHERE ' + where : ""}
         GROUP BY classroom.id
@@ -143,21 +143,14 @@ async function fetchClassroomsHaving(having, where = null) {
 async function fetchClassroomDevices(where) {
     let sql = `
         SELECT
-        *,
+        device.*,
         (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
-        (
-            SELECT (name)
-            FROM classroom
-            LEFT JOIN device2classroom
-            ON device2classroom.classroom_id = classroom.id
-            WHERE device2classroom.device_id = device.id
+        classroom.name AS classroom_name
 
-        ) AS classroom_name
+        FROM device
 
-        FROM device2classroom
-
-        LEFT JOIN device
-    	ON device2classroom.device_id = device.id
+        LEFT JOIN classroom
+        ON classroom.id = device.classroom_id
 
         WHERE ${where};
         `;
@@ -179,16 +172,12 @@ async function fetchAllDevices() {
         SELECT
         device.*,
         (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
-        (
-            SELECT (name)
-            FROM classroom
-            LEFT JOIN device2classroom
-            ON device2classroom.classroom_id = classroom.id
-            WHERE device2classroom.device_id = device.id
+        classroom.name AS classroom_name
 
-        ) AS classroom_name
+        FROM device
 
-        FROM device;
+        LEFT OUTER JOIN classroom
+        ON classroom.id = device.classroom_id;
         `;
     let res = await dbQuery(sql);
 
@@ -207,16 +196,12 @@ async function fetchAllDevicesWhere(where) {
         SELECT
         device.*,
         (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
-        (
-            SELECT (name)
-            FROM classroom
-            LEFT JOIN device2classroom
-            ON device2classroom.classroom_id = classroom.id
-            WHERE device2classroom.device_id = device.id
-
-        ) AS classroom_name
+        classroom.name AS classroom_name
 
         FROM device
+
+        LEFT OUTER JOIN classroom
+        ON classroom.id = device.classroom_id
 
         WHERE ${where};
         `;
@@ -237,16 +222,12 @@ async function fetchDevicesHaving(having, where = null) {
         SELECT
         device.*,
         (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working,
-        (
-            SELECT (name)
-            FROM classroom
-            LEFT JOIN device2classroom
-            ON device2classroom.classroom_id = classroom.id
-            WHERE device2classroom.device_id = device.id
-
-        ) AS classroom_name
+        classroom.name AS classroom_name
 
         FROM device
+
+        LEFT OUTER JOIN classroom
+        ON classroom.id = device.classroom_id
 
         ${where ? 'WHERE ' + where : ""}
         GROUP BY device.id
@@ -271,10 +252,7 @@ async function fetchAllDevicesAvailable() {
         (SELECT COUNT(*) FROM report WHERE item_group = "device" AND item_id = device.id AND solved IS NULL) = 0 AS working
         FROM device
 
-        LEFT JOIN device2classroom
-    	ON device.id = device2classroom.device_id
-
-        WHERE device2classroom.device_id IS NULL;
+        WHERE device.classroom_id IS NULL;
         `;
 
     let res = await dbQuery(sql);
@@ -349,7 +327,7 @@ async function fetchAllReports() {
 
         LEFT JOIN classroom
     	ON COALESCE(
-        (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+        (SELECT classroom_id FROM device WHERE report.item_group = "device" AND report.item_id = device.id) = classroom.id,
         report.item_group = "classroom" AND report.item_id = classroom.id)
 
         LEFT JOIN device
@@ -376,7 +354,7 @@ async function fetchAllReportsWhere(where) {
 
         LEFT JOIN classroom
     	ON COALESCE(
-        (SELECT classroom_id FROM device2classroom WHERE report.item_group = "device" AND report.item_id = device_id) = classroom.id,
+        (SELECT classroom_id FROM device WHERE report.item_group = "device" AND report.item_id = device.id) = classroom.id,
         report.item_group = "classroom" AND report.item_id = classroom.id)
 
         LEFT JOIN device

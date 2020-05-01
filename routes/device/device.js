@@ -106,10 +106,10 @@ router.post("/delete/:id",
 
 async function deleteClassroom(req, res) {
     let id = req.params.id;
-    let where1 = `device_id = "${id}"`;
+    let where1 = `item_group = "device" AND item_id = "${id}"`;
     let where2 = `id = "${id}"`;
 
-    await db.deleteFrom("device2classroom", where1);
+    await db.deleteFrom("report", where1);
 
     res.json(
         await db.deleteFrom("device", where2)

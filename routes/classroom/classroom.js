@@ -105,13 +105,20 @@ router.post("/delete/:id",
 
 async function deleteClassroom(req, res) {
     let id = req.params.id;
-    let where1 = `classroom_id = "${id}"`;
-    let where2 = `id = "${id}"`;
+    let where1 = `item_group = "classroom" AND item_id = "${id}"`;
+    let where2 = `classroom_id = "${id}"`;
+    let where3 = `id = "${id}"`;
 
-    await db.deleteFrom("device2classroom", where1);
+    let device = {
+        classroom_id: null
+    };
+
+    await db.deleteFrom("report", where1);
+
+    await db.update("device", device, where2);
 
     res.json(
-        await db.deleteFrom("classroom", where2)
+        await db.deleteFrom("classroom", where3)
     );
 }
 
@@ -127,39 +134,5 @@ router.get("/device/view/:name/:value", async (req, res) => {
         await db.fetchClassroomDevices(where)
     );
 });
-
-// Add Device to Classroom
-router.post("/device/create",
-    (req, res) => addClassroomDevice(req, res));
-
-async function addClassroomDevice(req, res) {
-    res.json(
-        await db.insert("device2classroom", req.body)
-    );
-}
-
-// Update Device from Classroom
-router.post("/device/update/:classroomFrom/:deviceid",
-    (req, res) => updateClassroomDevice(req, res));
-
-async function updateClassroomDevice(req, res) {
-    let where = `classroom_id = "${req.params.classroomFrom}" AND device_id = "${req.params.deviceid}"`;
-
-    res.json(
-        await db.update("device2classroom", req.body, where)
-    );
-}
-
-// Remove Device from Classroom
-router.post("/device/delete/:classroomid/:deviceid",
-    (req, res) => deleteClassroomDevice(req, res));
-
-async function deleteClassroomDevice(req, res) {
-    let where = `classroom_id = "${req.params.classroomid}" AND device_id = "${req.params.deviceid}"`;
-
-    res.json(
-        await db.deleteFrom("device2classroom", where)
-    );
-}
 
 module.exports = router;
