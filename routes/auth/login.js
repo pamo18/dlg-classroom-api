@@ -38,7 +38,7 @@ async function login(req, res) {
         if (match) {
             const payload = { email: personData.email };
             const secret = process.env.JWT_SECRET;
-            const token = jwt.sign(payload, secret, { expiresIn: '48h'});
+            const token = jwt.sign(payload, secret, { expiresIn: '1h'});
 
             res.json({
                 person: personData,
